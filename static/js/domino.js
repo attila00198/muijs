@@ -66,6 +66,8 @@ function ent(htmlEntity) {
     return spanEl
 }
 
+// ========== Simple Tags ==========
+
 function hr() {
     return tag("hr")
 }
@@ -215,4 +217,49 @@ function label(...children) {
     node.setTarget = function (targetId) { this.attr({ for: targetId }); return this }
 
     return node;
+}
+
+// ========== Utilities ============
+
+/**
+ * A simple universal router for rendering pages based on URL hash changes.
+ * 
+ * @param {Object} routes - Key-value pairs where key is the route path and value is a function that returns content
+ * @param {HTMLElement|string} container - DOM element or selector string for the container where content will be rendered
+ * @param {string} defaultRoute - Default route when no hash is present (default: "home")
+ */
+function basicRouter(routes, container, defaultRoute = "home") {
+    // Resolve container to DOM element
+    let rootElement
+    if (typeof container === 'string') {
+        rootElement = document.querySelector(container)
+        if (!rootElement) {
+            throw new Error(`Container element not found: ${container}`)
+        }
+    } else if (container && container.nodeType === 1) { // Check if it's a DOM element
+        rootElement = container
+    } else {
+        throw new Error('Container must be a DOM element or a valid CSS selector string')
+    }
+
+    function renderRoute() {
+        const path = window.location.hash.slice(1) || defaultRoute
+        const pageFunction = routes[path]
+
+        // Clear container
+        rootElement.innerHTML = ''
+
+        if (pageFunction && typeof pageFunction === 'function') {
+            const content = pageFunction()
+            rootElement.appendChild(content)
+        } else {
+            // Simple 404 fallback
+            const notFound = document.createElement('div')
+            notFound.textContent = '404 Not Found'
+            rootElement.appendChild(notFound)
+        }
+    }
+
+    window.addEventListener("hashchange", renderRoute)
+    renderRoute() // Initial render
 }

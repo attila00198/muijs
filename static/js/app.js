@@ -383,45 +383,72 @@ function galery() {
 }
 
 // ========== APP ==========
-// In the app function, I put toghether all the earlyer created pages and components.
-// And finally with the render function we are able to show them in the browser.
-// The only requirement is to have an index.html and a div with an id like root or app or somthing similar.
-// That is not carved into stone. The user can decide.
+// Rewritten app function using the new basicRouter
+// Much cleaner - no manual state management for active menu items,
+// no manual render calls, and URL-based navigation
 
 function app() {
-    let menuItems = ["Home", "Formok", "Galéria"]
-    let contents = [
-        home,
-        forms,
-        galery
-    ]
-
-    function setActiveMenu(index) {
-        state.activeMenuItem = index
-        render()
+    // Define routes - key is the URL hash, value is the page function
+    const routes = {
+        home: () => home(state),
+        forms: forms,
+        gallery: galery
     }
 
-    function render() {
+    // Create the persistent layout that stays on all pages
+    function createLayout() {
+        const menuItems = [
+            { label: "Home", route: "home" },
+            { label: "Formok", route: "forms" },
+            { label: "Galéria", route: "gallery" }
+        ]
+
         const root = document.getElementById("root")
-        root.innerHTML = "";
+
+        // Create the main layout structure
+        root.innerHTML = ""
         root.appendChild(
             div(
+                // Navigation menu with hash links
                 menu(
-                    menuItems.map((label, i) =>
-                        a(label, "#")
-                            .setClass(i === state.activeMenuItem ? "active nav-link" : "nav-link")
-                            .onClick(() => setActiveMenu(i))
+                    menuItems.map(item =>
+                        a(item.label, `#${item.route}`)
+                            .setClass("nav-link")
                     )
                 ),
-                contents[state.activeMenuItem](state),
+                // Content area where router will render pages
+                div().setId("page-content"),
+                // Footer
                 div()
-                    .setHTML("2025 &copy; <b>Kiss Attila</b> <span class='text-muted'>Made with MUI.js</span>")
+                    .setHTML("2025 &copy; <b>Kiss Attila</b> <span class='text-muted'>Made with DOMino.js</span>")
                     .setClass("container")
             ).setClass("container-fluid")
         )
     }
 
-    render()
+    // Set up the layout first
+    createLayout()
+
+    // Initialize router to render pages in the content area
+    basicRouter(routes, "#page-content")
+
+    // Optional: Update active menu state when route changes
+    function updateActiveMenu() {
+        const currentRoute = window.location.hash.slice(1) || "home"
+        const navLinks = document.querySelectorAll(".nav-link")
+
+        navLinks.forEach(link => {
+            link.classList.remove("active")
+            // Check if this link's href matches current route
+            if (link.getAttribute("href") === `#${currentRoute}`) {
+                link.classList.add("active")
+            }
+        })
+    }
+
+    // Update active menu on initial load and route changes
+    window.addEventListener("hashchange", updateActiveMenu)
+    updateActiveMenu() // Set initial active state
 }
 
 window.onload = () => app()
